@@ -8,11 +8,15 @@
 </head>
 <body>
     <h2>Recommended Books</h2>
-    <ul>
+    <div class="book-container">
         {% for book in book_details %}
-            <li>{{ book.title }} by {{ book.author }}</li>
+            <div class="book">
+                <img src="{{ book.image_url }}" alt="Book Cover" width="150" height="200">
+                <p>Title: {{ book.title }}</p>
+                <p>Author: {{ book.author }}</p>
+                <p>ISBN: {{ book.isbn }}</p>
+            </div>
         {% endfor %}
-    </ul>
-    </ul>
+    </div>
 </body>
 </html>
