@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood-Based Book Recommendation</title>
+</head>
+<body>
+    <h1>Mood-Based Book Recommendation</h1>
+    <form action="/recommend" method="post">
+        <label for="mood">Select your mood:</label>
+        <select id="mood" name="mood">
+            <option value="happy">Happy</option>
+            <option value="sad">Sad</option>
+            <option value="excited">Excited</option>
+            <!-- Add more mood options as needed -->
+        </select>
+        <button type="submit">Get Recommendations</button>
+    </form>
+    <div id="recommendations">
+        <!-- Recommendations will be displayed here -->
+    </div>
+</body>
+</html>
