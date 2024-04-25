@@ -3,8 +3,8 @@ import torch
 import pandas as pd
 
 # Import your recommendation model and necessary preprocessing functions
-from model import recommend_books_based_on_mood
-from model import fetch_book_details
+from model import recommend_books
+from model import get_book_names
 
 app = Flask(__name__)
 
@@ -19,16 +19,18 @@ def index():
 @app.route("/recommend", methods=["POST"])
 def get_recommendations():
     if request.method == "POST":
-        # Get user's selected mood from the form
         mood = request.form.get("mood")
+        book_details = recommend_books("26", mood)  # "26" should be dynamically set or authenticated user ID
+        book_details = get_book_names(book_details)
 
-        # Call your recommendation function with the user's mood
-        top_3_book_isbns = recommend_books_based_on_mood(mood)
-
-        book_details = fetch_book_details(top_3_book_isbns)
+        # Debug output
+        print("***************************************")
+        print("Books details received from recommendation system:", book_details)
+        print("***************************************")
 
         # Render the recommendations on the frontend
         return render_template("recommendations.html", book_details=book_details)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
