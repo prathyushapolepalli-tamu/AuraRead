@@ -7,292 +7,229 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
+import pandas as pd
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import math
+from torch.utils.data import Dataset, DataLoader
+from sklearn.preprocessing import LabelEncoder
+from torch.utils.data import DataLoader
+from sklearn.model_selection import train_test_split
+import scipy
+import math
+import sklearn
+from sklearn.model_selection import train_test_split
+from scipy.sparse.linalg import svds
+import pandas as pd
+import math
+import numpy as np
+import random
+from sklearn.metrics import mean_squared_error
+import numpy as np
+import pandas as pd
+from scipy.sparse.linalg import svds
+from scipy.sparse import csr_matrix
+
+def get_train_test_split(dataframe, min_interactions=3, test_size=0.30, random_state=42):
+    def apply_log_smoothing(value):
+        return math.log(1 + value, 2)
+
+    # Group by ISBN and User-ID, count interactions, and summarize by user
+    interaction_summary = dataframe.groupby(['ISBN', 'User-ID']).size()
+    user_interaction_totals = interaction_summary.groupby('User-ID').size()
+    print(f'Total number of users: {len(user_interaction_totals)}')
+
+    # Filter users with at least 'min_interactions' interactions
+    qualified_users = user_interaction_totals[user_interaction_totals >= min_interactions].reset_index()[['User-ID']]
+    print(f'Users with at least {min_interactions} interactions: {len(qualified_users)}')
+
+    # Filter the dataset to include only interactions from qualified users
+    qualified_interactions = dataframe.merge(qualified_users, on='User-ID', how='right')
+    print(f'Total interactions: {len(dataframe)}')
+    print(f'Interactions from qualified users: {len(qualified_interactions)}')
+
+    # Apply smoothing to the sum of book ratings and reset the index
+    smoothed_interactions = qualified_interactions.groupby(['ISBN', 'User-ID'])['Book-Rating'].sum().apply(apply_log_smoothing).reset_index()
+    print(f'Unique user/item interactions: {len(smoothed_interactions)}')
+
+    # Split data into training and testing sets
+    train_data, test_data = train_test_split(smoothed_interactions,
+                                             stratify=smoothed_interactions['User-ID'],
+                                             test_size=test_size,
+                                             random_state=random_state)
+    print(f'Interactions on Train set: {len(train_data)}')
+    print(f'Interactions on Test set: {len(test_data)}')
+
+    return train_data, test_data, smoothed_interactions
+
+"""#SVD"""
+
+def matrix_factorization_predictions(train_df, num_factors=15):
+    """Performs matrix factorization using SVD on the user-item ratings matrix from training data.
+
+    Args:
+        train_df (DataFrame): Training data containing user, item, and ratings.
+        num_factors (int): Number of latent factors to use in the matrix factorization.
+
+    Returns:
+        DataFrame: A DataFrame with the predicted ratings for all users and items.
+    """
+    # Create pivot table
+    users_items_pivot_matrix_df = train_df.pivot(index='User-ID', columns='ISBN', values='Book-Rating').fillna(0)
+
+    # Convert the pivot table to a sparse matrix format
+    users_items_pivot_matrix = csr_matrix(users_items_pivot_matrix_df.values)
+
+    # Perform matrix factorization using SVD
+    U, sigma, Vt = svds(users_items_pivot_matrix, k=num_factors)
+    sigma = np.diag(sigma)
+
+    # Predict ratings
+    all_user_predicted_ratings = np.dot(np.dot(U, sigma), Vt)
+
+    # Normalize the ratings to be between 0 and 10
+    min_val = np.min(all_user_predicted_ratings)
+    max_val = np.max(all_user_predicted_ratings)
+    all_user_predicted_ratings_norm = ((all_user_predicted_ratings - min_val) /
+                                       (max_val - min_val)) * 10
+
+    # Convert the matrix back to a DataFrame
+    cf_preds_df = pd.DataFrame(all_user_predicted_ratings_norm, columns=users_items_pivot_matrix_df.columns, index=users_items_pivot_matrix_df.index).transpose()
+
+    return cf_preds_df
+
+"""#User based Collaborative Filtering using Matrix factorization"""
+
+# Assuming your CFRecommender class has a method recommend_items that can return ratings predictions
+# First, extend your CFRecommender class to include a method to predict ratings for a given user and item
+
+class CFRecommender:
+    MODEL_NAME = 'Collaborative Filtering'
+
+    def __init__(self, cf_predictions_df):
+        self.cf_predictions_df = cf_predictions_df
+
+    def get_model_name(self):
+        return self.MODEL_NAME
+
+    def recommend_items(self, user_id, items_to_ignore=[], topn=10):
+        sorted_user_predictions = self.cf_predictions_df[user_id].sort_values(ascending=False).reset_index().rename(columns={user_id: 'recStrength'})
+        recommendations_df = sorted_user_predictions[~sorted_user_predictions['ISBN'].isin(items_to_ignore)].sort_values('recStrength', ascending=False).head(topn)
+        return recommendations_df
+
+    def predict_rating(self, user_id, item_id):
+        if user_id in self.cf_predictions_df.columns and item_id in self.cf_predictions_df.index:
+            return self.cf_predictions_df.loc[item_id, user_id]
+        else:
+            return np.nan  # Return NaN for user/item combinations not in the matrix
+
+class ModelRecommender:
+
+    def __init__(self, interactions_full_indexed_df,interactions_test_indexed_df, interactions_train_indexed_df, ratings_df_unique ):
+        self.interactions_full_indexed_df = interactions_full_indexed_df
+        self.interactions_test_indexed_df = interactions_test_indexed_df
+        self.interactions_train_indexed_df = interactions_train_indexed_df
+        self.ratings_df_unique = ratings_df_unique
+
+    def get_items_interacted(UserID, interactions_df):
+      interacted_items = interactions_df.loc[UserID]['ISBN']
+      return set(interacted_items if type(interacted_items) == pd.Series else [interacted_items])
+
+    # Function for getting the set of items which a user has not interacted with
+    def get_not_interacted_items_sample(self, UserID, sample_size, seed=42):
+        interacted_items = self.get_items_interacted(UserID, self.interactions_full_indexed_df)
+        all_items = set(self.ratings_df['ISBN'])
+        non_interacted_items = all_items - interacted_items
+
+        random.seed(seed)
+        non_interacted_items_sample = random.sample(non_interacted_items, sample_size)
+        return set(non_interacted_items_sample)
+
+#
+    # Function to verify whether a particular item_id was present in the set of top N recommended items
+    def _verify_hit_top_n(self, item_id, recommended_items, topn):
+            try:
+                index = next(i for i, c in enumerate(recommended_items) if c == item_id)
+            except:
+                index = -1
+            hit = int(index in range(0, topn))
+            return hit, index
+
+    # Function to evaluate the performance of model for each user
+    def evaluate_model_for_user(self, model, person_id, mood):
+
+        # Getting the items in test set
+        interacted_values_testset = self.interactions_test_indexed_df.loc[person_id]
+
+        if type(interacted_values_testset['ISBN']) == pd.Series:
+            person_interacted_items_testset = set(interacted_values_testset['ISBN'])
+        else:
+            person_interacted_items_testset = set([int(interacted_values_testset['ISBN'])])
+
+        interacted_items_count_testset = len(person_interacted_items_testset)
+
+        # Getting a ranked recommendation list from the model for a given user
+        #person_recs_df = model.recommend_items(person_id, items_to_ignore=get_items_interacted(person_id, interactions_train_indexed_df),topn=10000000000)
+        person_recs_df = model.recommend_items(person_id, items_to_ignore=[],topn=10000000000)
+        print(person_recs_df)
+        updated_person_recs_df = person_recs_df.merge(self.ratings_df_unique[['ISBN', 'Max Mood', 'Book']], on='ISBN', how='left')
+        print(updated_person_recs_df.head(10))
+        updated_person_recs_df = updated_person_recs_df[updated_person_recs_df['Max Mood'].str.contains(mood, na=False)]
+        print('Recommendation for User-ID = ',person_id)
+        return updated_person_recs_df.head(5)
+
+        # Function to evaluate the performance of model at overall level
+    def recommend_book(self, model ,userid, mood):
+
+        person_metrics = self.evaluate_model_for_user(model, userid, mood)
+        return person_metrics
+
+#model_recommender = ModelRecommender()
+
+"""#BUILD model"""
+
+def build_model():
+  ratings_df = pd.read_csv("data/baseline_ratinsg.csv")
+  ratings_df.head()
+  ratings_df.rename(columns={'user_id':'User-ID','isbn':'ISBN','book_rating':'Book-Rating'},inplace=True)
+  ratings_df_unique = ratings_df.drop_duplicates(subset='ISBN')
+  train_df, test_df, interactions_full_df = get_train_test_split(ratings_df)
+  print(f'Interactions on Train set: %d' % len(train_df))
+  print(f'Interactions on Test set: %d' % len(test_df))
+  cf_preds_df = matrix_factorization_predictions(train_df)
+  cf_preds_df.head()
+  interactions_full_indexed_df = interactions_full_df.set_index('User-ID')
+  interactions_train_indexed_df = train_df.set_index('User-ID')
+  interactions_test_indexed_df = test_df.set_index('User-ID')
+  cf_recommender_model = CFRecommender(cf_preds_df)
+  model_recommender = ModelRecommender(interactions_full_indexed_df,interactions_test_indexed_df, interactions_train_indexed_df, ratings_df_unique)
+  return model_recommender, cf_recommender_model, test_df, train_df
 
 def recommend_books_based_on_mood(mood, user_id):
-    ratings=pd.read_csv('data/all_ratings.csv', low_memory=False)
-    ratings_df=pd.read_csv('data/all_ratings.csv',low_memory=False)
-    # Initialize LabelEncoders for user and item IDs
-    user_encoder = LabelEncoder()
-    item_encoder = LabelEncoder()
-
-    # Fit and transform user and item IDs
-    ratings['user_id'] = user_encoder.fit_transform(ratings['User-ID'])
-    ratings['item_id'] = item_encoder.fit_transform(ratings['ISBN'])
+  model_recommender, cf_recommender_model, test_df, train_df = build_model()
+  ret_updated_person_recs_df = model_recommender.recommend_book(cf_recommender_model,user_id,mood)
+  list_ret_updated_person_recs_df = list(ret_updated_person_recs_df['ISBN'])
+  list_ret_updated_person_recs_df = [number.zfill(10) for number in list_ret_updated_person_recs_df]
+  print(list_ret_updated_person_recs_df)
+  return list_ret_updated_person_recs_df
 
 
-    # Fit and transform user and item IDs
-    ratings_df['user_id'] = user_encoder.fit_transform(ratings_df['User-ID'])
-    ratings_df['item_id'] = item_encoder.fit_transform(ratings_df['ISBN'])
-    ratings_train = ratings[0:36890]
-    ratings_test = ratings[36890:].reset_index(drop=True)
-    class RatingDataset(Dataset):
-        def __init__(self, data):
-            self.data = data
+#print((recommend_books_based_on_mood('Fearful', 21576)))
 
-        def __len__(self):
-            return len(self.data)
+"""#Evaluation
 
-        def __getitem__(self, idx):
-            return {
-                'user_id': self.data['user_id'][idx],
-                'book_id': self.data['item_id'][idx],
-                #'book_id': self.data['ISBN'][idx],
-                'rating': self.data['Book-Rating'][idx]
-            }
-        
+# Now, predict ratings for all user-item pairs in the test set
+test_users = test_df['User-ID']
+test_items = test_df['ISBN']
+predicted_ratings = [cf_recommender_model.predict_rating(user, item) for user, item in zip(test_users, test_items)]
 
+# Add these predictions back to the test dataframe
+test_df['predicted_rating'] = predicted_ratings
 
-    # Instantiate train and test datasets
-    train_dataset = RatingDataset(ratings_train)
-    test_dataset = RatingDataset(ratings_test)
-
-    # Create train and test loaders
-    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
-
-    class GMF(nn.Module):
-        def __init__(self, num_users, num_items, embedding_size):
-            super(GMF, self).__init__()
-            self.relu = nn.ReLU()
-            self.user_embedding = nn.Embedding(num_users, embedding_size)
-            self.item_embedding = nn.Embedding(num_items, embedding_size)
-            self.fc = nn.Linear(embedding_size, 32)
-            self.output_layer = nn.Linear(32, 1)
-            self.dropout = nn.Dropout(0.2)
-
-        def forward(self, user_ids, item_ids):
-            user_embed = self.user_embedding(user_ids)
-            item_embed = self.item_embedding(item_ids)
-            element_product = user_embed * item_embed
-            x = self.fc(element_product)
-            x = self.relu(x)
-            x = self.dropout(x)
-            output = self.output_layer(x)
-            output = torch.sigmoid(output)  # Ensure output is between 0 and 1
-            return output.view(-1)
-        
-    class MLP(nn.Module):
-        def __init__(self, num_users, num_items, embedding_size, hidden_layers=[64, 32]):
-            super(MLP, self).__init__()
-            self.user_embedding = nn.Embedding(num_users, embedding_size)
-            self.item_embedding = nn.Embedding(num_items, embedding_size)
-            layers = []
-            input_size = embedding_size * 2
-            for hidden_size in hidden_layers:
-                layers.append(nn.Linear(input_size, hidden_size))
-                layers.append(nn.ReLU())
-                layers.append(nn.Dropout(0.2))
-                input_size = hidden_size
-            layers.append(nn.Linear(hidden_layers[-1], 1))
-            self.layers = nn.Sequential(*layers)
-
-        def forward(self, user_ids, item_ids):
-            user_embed = self.user_embedding(user_ids)
-            item_embed = self.item_embedding(item_ids)
-            concat_embed = torch.cat((user_embed, item_embed), dim=1)
-            output = self.layers(concat_embed)
-            output = torch.sigmoid(output)  # Ensure output is between 0 and 1
-            return output.view(-1)
-
-    class NCF(nn.Module):
-        def __init__(self, gmf_model, mlp_model):
-            super(NCF, self).__init__()
-            self.gmf = gmf_model
-            self.mlp = mlp_model
-
-        def forward(self, user_ids, item_ids):
-            gmf_output = self.gmf(user_ids, item_ids)
-            mlp_output = self.mlp(user_ids, item_ids)
-            combined_output = (gmf_output + mlp_output) / 2
-            return combined_output
-        
-    num_users = len(ratings['User-ID'].unique())
-    num_items = len(ratings['ISBN'].unique())
-    embedding_size = 64
-    hidden_layers = [128, 64, 32]
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(device)
-    # Initialize GMF model
-    gmf_model = GMF(num_users, num_items, embedding_size).to(device)
-
-    # Initialize MLP model
-    mlp_model = MLP(num_users, num_items, embedding_size, hidden_layers).to(device)
-
-    #Loss criterion for GMF and MLP models
-    models_criterion = nn.MSELoss()
-
-    # Optimizer for GMF model
-    gmf_optimizer = optim.Adam(gmf_model.parameters(), lr=0.001)
-
-    # Optimizer for MLP model
-    mlp_optimizer = optim.Adam(mlp_model.parameters(), lr=0.001)
-
-    def train_gmf(model, dataloader, criterion, optimizer, num_epochs):
-        for epoch in range(num_epochs):
-            total_loss = 0.0
-            i=0
-            total_diff=0
-            total_len=0
-            for batch in dataloader:
-                user_ids = batch['user_id'].to(device)
-                item_ids = batch['book_id'].to(device)
-                ratings = batch['rating'].to(device)
-
-                optimizer.zero_grad()
-                predictions = model(user_ids, item_ids)
-                loss = criterion(predictions, (ratings.float()/10) )
-                loss.backward()
-                optimizer.step()
-
-                if (i % 1000 == 0):
-                    actual_ratings = 10*predictions
-                    diff = torch.abs( actual_ratings - ratings ).sum().item()
-                    print(f'Batch [{i+1}/{len(dataloader)}], Loss: {loss.item()}, Avg. Diff: { (diff/len(ratings)) }')
-
-                i = i + 1
-
-                total_loss += loss.item()
-
-            print(f'GMF Epoch [{epoch+1}/{num_epochs}], Loss: {total_loss / len(dataloader)}')
-
-    def train_mlp(model, dataloader, criterion, optimizer, num_epochs):
-        for epoch in range(num_epochs):
-            total_loss = 0.0
-            i=0
-            for batch in dataloader:
-                user_ids = batch['user_id'].to(device)
-                item_ids = batch['book_id'].to(device)
-                ratings = batch['rating'].to(device)
-
-                optimizer.zero_grad()
-                predictions = model(user_ids, item_ids)
-                loss = criterion(predictions, (ratings.float()/10))
-                loss.backward()
-                optimizer.step()
-
-                if (i % 1000 == 0):
-                    actual_ratings = 10*predictions
-                    diff = torch.abs( actual_ratings - ratings ).sum().item()
-                    print(f'Batch [{i+1}/{len(dataloader)}], Loss: {loss.item()}, Avg. Diff: { (diff/len(ratings)) }')
-
-                i = i + 1
-
-                total_loss += loss.item()
-
-            print(f'MLP Epoch [{epoch+1}/{num_epochs}], Loss: {total_loss / len(dataloader)}')
-
-    num_epochs = 5
-
-    print("Training GMF...")
-    train_gmf(gmf_model, train_loader, models_criterion, gmf_optimizer, num_epochs)
-
-    print("Training MLP...")
-    train_mlp(mlp_model, train_loader, models_criterion, mlp_optimizer, num_epochs)
-
-    model = NCF(gmf_model, mlp_model)
-
-    criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-    num_epochs = 10
-    for epoch in range(num_epochs):
-        i=0
-        for batch in train_loader:
-            user_ids = batch['user_id'].to(device)
-            item_ids = batch['book_id'].to(device)
-            ratings = batch['rating'].to(device)
-
-            optimizer.zero_grad()
-            predictions = model(user_ids, item_ids)
-            loss = criterion(predictions, (ratings.float()/10))
-            loss.backward()
-            optimizer.step()
-
-            if (i % 1000 == 0):
-                actual_ratings = 10*predictions
-                rmse = math.sqrt(torch.square(actual_ratings-ratings).sum().item()/len(ratings))
-                diff = torch.abs( actual_ratings - ratings ).sum().item()
-                print(f'Batch [{i+1}/{len(train_loader)}], Loss: {loss.item()}, Avg. Diff: { (diff/len(ratings)) }, RMSE: {rmse}')
-
-
-            i = i + 1
-
-
-        print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item()}')
-
-    model.eval()
-
-    total_loss = 0
-    total_diff = 0
-    total_examples = 0
-    total_squared_error = 0
-    with torch.no_grad():
-        for batch in test_loader:
-            user_ids = batch['user_id'].to(device)
-            item_ids = batch['book_id'].to(device)
-            ratings = batch['rating'].to(device)
-
-            predictions = model(user_ids, item_ids)
-            loss = criterion(predictions, (ratings.float() / 10))
-
-            actual_ratings = 10 * predictions
-            diff = torch.abs(actual_ratings - ratings).sum().item()
-
-            total_loss += loss.item() * len(ratings)
-            total_diff += diff
-            total_examples += len(ratings)
-            total_squared_error += torch.square(actual_ratings-ratings).sum().item()
-
-    avg_loss = total_loss / total_examples
-    avg_diff = total_diff / total_examples
-    rmse = math.sqrt(total_squared_error / total_examples)
-
-    print('Evalution Measures:')
-    print(f'Evaluation Loss: {avg_loss}, Average Difference: {avg_diff}, RMSE: {rmse}')
-
-    book_ratings = ratings_df.groupby('item_id')['Book-Rating'].mean().reset_index()
-    book_ratings = book_ratings.sort_values(by='Book-Rating', ascending=False)
-    top_64_books = book_ratings.head(64)
-    print(top_64_books)
-    #user_id = 276704
-    user_id_tensor = torch.LongTensor([user_id] * 64).to(device)
-
-    top_64_books = top_64_books['item_id'].tolist()
-    item_ids_tensor = torch.LongTensor(top_64_books).to(device)
-
-    print("User ID Tensor:", user_id_tensor)
-    print("Top 10 Books Tensor:", item_ids_tensor)
-
-    # Clip user indices to valid range
-    user_id_tensor = torch.clip(user_id_tensor, 0, num_users - 1)
-
-    # Clip item indices to valid range
-    item_ids_tensor = torch.clip(item_ids_tensor, 0, num_items - 1)
-
-    print(user_id_tensor)
-    print(item_ids_tensor)
-    predictions = model(user_id_tensor, item_ids_tensor)
-
-    indexed_predictions = [(idx, pred) for idx, pred in enumerate(predictions)]
-
-    # Sort the indexed predictions by the prediction values in descending order
-    sorted_predictions = sorted(indexed_predictions, key=lambda x: x[1], reverse=True)
-
-    # Get the top 3 unique ISBNs
-    top_3_unique_isbns = []
-    seen_isbns = set()  # Keep track of seen ISBNs to ensure uniqueness
-    for idx, pred in sorted_predictions:
-        isbn = ratings_df['ISBN'].iloc[idx]
-        if isbn not in seen_isbns:
-            top_3_unique_isbns.append(isbn)
-            seen_isbns.add(isbn)
-        if len(top_3_unique_isbns) == 3:
-            break
-
-    print("Top 3 Unique ISBNs:", top_3_unique_isbns)
-
-    return top_3_unique_isbns
-
+# Calculate RMSE
+rmse = np.sqrt(mean_squared_error(test_df['Book-Rating'], test_df['predicted_rating'].fillna(0)))
+print(f"RMSE: {rmse}")"""
 
 # Assuming you have a DataFrame named book_data with columns ['ISBN', 'Title', 'Author']
 book_data = pd.read_csv('data/all_books.csv')  # Load your book data from a CSV file or database

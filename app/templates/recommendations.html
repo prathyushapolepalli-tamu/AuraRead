@@ -72,13 +72,16 @@
         <h1>Book Recommendations</h1>
         <ul>
             {% for book in book_details %}
+                <a href="{{ book.url }}" class="book-link" target="_blank" style="text-decoration: none; color: inherit;">
                 <li>
+                    
                     <div class="book-info">
                         <div class="book-title">{{ book.title | upper}}</div>
                         <div class="book-author">by {{ book.author | upper}}</div>
                     </div>
                     <img src="{{ book.image_url }}" alt="Book Cover" class="book-cover">
                 </li>
+                </a>
             {% endfor %}
         </ul>
     </div>
