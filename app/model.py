@@ -247,5 +247,9 @@ def fetch_book_details(book_isbns):
             print("title is: ", title)
             author = book_info.iloc[0]['Author']
             print("author is ", author)
-            book_details.append({'isbn': isbn, 'title': title, 'author': author})
+            image_url = book_info.iloc[0]['Image-URL-S']
+            print("image_url is ", image_url)
+            url = book_info.iloc[0]['URL']
+            print("url is ", url)
+            book_details.append({'isbn': isbn, 'title': title, 'author': author, 'image_url' : image_url, 'url': url})
     return book_details
