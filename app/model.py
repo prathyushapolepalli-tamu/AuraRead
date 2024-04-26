@@ -8,7 +8,7 @@ from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 
-def recommend_books_based_on_mood(mood):
+def recommend_books_based_on_mood(mood, user_id):
     ratings=pd.read_csv('data/all_ratings.csv', low_memory=False)
     ratings_df=pd.read_csv('data/all_ratings.csv',low_memory=False)
     # Initialize LabelEncoders for user and item IDs
@@ -254,7 +254,7 @@ def recommend_books_based_on_mood(mood):
     book_ratings = book_ratings.sort_values(by='Book-Rating', ascending=False)
     top_64_books = book_ratings.head(64)
     print(top_64_books)
-    user_id = 276704
+    #user_id = 276704
     user_id_tensor = torch.LongTensor([user_id] * 64).to(device)
 
     top_64_books = top_64_books['item_id'].tolist()

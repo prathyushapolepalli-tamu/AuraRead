@@ -21,9 +21,10 @@ def get_recommendations():
     if request.method == "POST":
         # Get user's selected mood from the form
         mood = request.form.get("mood")
+        user_id = int(request.form.get("userId"))
 
         # Call your recommendation function with the user's mood
-        top_3_book_isbns = recommend_books_based_on_mood(mood)
+        top_3_book_isbns = recommend_books_based_on_mood(mood, user_id)
 
         book_details = fetch_book_details(top_3_book_isbns)
 

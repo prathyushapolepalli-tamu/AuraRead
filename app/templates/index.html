@@ -1,24 +1,166 @@
+<!--<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraRead: Mood-Based Book Recommendation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+            text-align: center;
+        }
+        h1 {
+            font-size: 36px;
+            font-weight: bold;
+            margin-top: 50px;
+            margin-bottom: 30px;
+            color: #222;
+        }
+        form {
+            margin-bottom: 50px;
+        }
+        label {
+            font-size: 18px;
+            margin-right: 10px;
+            color: #666;
+        }
+        select {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>AuraRead: Mood-Based Book Recommendation</h1>
+    <form action="/recommend" method="post">
+        <label for="mood">Select your mood:</label>
+        <select id="mood" name="mood">
+            <option value="melancholic">Melancholic</option>
+            <option value="motivational">Motivational</option>
+            <option value="joyful">Joyful</option>
+            <option value="fearful">Fearful</option>
+            <option value="romantic">Romantic</option>
+        </select>
+        <button type="submit">Get Recommendations</button>
+    </form>
+    <div id="recommendations">
+    </div>
+</body>
+</html>-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mood-Based Book Recommendation</title>
+    <title>AuraRead: Mood-Based Book Recommendation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+            text-align: center;
+        }
+        .container {
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            font-size: 36px;
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 30px;
+            color: #007bff;
+        }
+        form {
+            margin-bottom: 30px;
+        }
+        label {
+            font-size: 18px;
+            margin-right: 10px;
+            color: #666;
+        }
+        select {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .footer {
+            font-size: 14px;
+            color: #666;
+            margin-top: 30px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Mood-Based Book Recommendation</h1>
-    <form action="/recommend" method="post">
-        <label for="mood">Select your mood:</label>
-        <select id="mood" name="mood">
-            <option value="happy">Happy</option>
-            <option value="sad">Sad</option>
-            <option value="excited">Excited</option>
-            <!-- Add more mood options as needed -->
-        </select>
-        <button type="submit">Get Recommendations</button>
-    </form>
-    <div id="recommendations">
-        <!-- Recommendations will be displayed here -->
+    <div class="container">
+        <h1>AuraRead: Mood-Based Book Recommendation</h1>
+        <form action="/recommend" method="post">
+            <label for="mood">Select your mood:</label>
+            <select id="mood" name="mood">
+                <option value="melancholic">Melancholic</option>
+                <option value="motivational">Motivational</option>
+                <option value="joyful">Joyful</option>
+                <option value="fearful">Fearful</option>
+                <option value="romantic">Romantic</option>
+                <!-- Add more mood options as needed -->
+            </select>
+            <br>
+            <br>
+            <label for="userId">Enter your User ID:</label>
+            <input type="text" id="userId" name="userId">
+            <br>
+            <br>
+            <button type="submit">Get Recommendations</button>
+        </form>
+        <div id="recommendations">
+            <!-- Recommendations will be displayed here -->
+        </div>
+    </div>
+    <div class="footer">
+        Made with ❤️ by AuraRead Team
     </div>
 </body>
 </html>
+
+
