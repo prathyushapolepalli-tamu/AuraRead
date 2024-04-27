@@ -190,8 +190,12 @@ class ModelRecommender:
         print(person_recs_df)
         updated_person_recs_df = person_recs_df.merge(self.ratings_df_unique[['ISBN', 'Max Mood', 'Book']], on='ISBN', how='left')
         print(updated_person_recs_df.head(10))
-        updated_person_recs_df = updated_person_recs_df[updated_person_recs_df['Max Mood'].str.contains(mood, na=False)]
+
         print('Recommendation for User-ID = ',person_id)
+        if mood.lower() == "default":
+          return updated_person_recs_df.head(5)
+
+        updated_person_recs_df = updated_person_recs_df[updated_person_recs_df['Max Mood'].str.contains(mood, na=False)]
         return updated_person_recs_df.head(5)
 
         # Function to evaluate the performance of model at overall level
