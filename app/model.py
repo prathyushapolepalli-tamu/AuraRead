@@ -163,13 +163,12 @@ class ModelRecommender:
       
       top_books = books_grouped.sort_values('count', ascending=False).head(topk)
       
-      top_books_details = self.interactions_test_indexed_df[self.interactions_test_indexed_df['ISBN'].isin(top_books['ISBN'])]
       
       # Since top_books_details might have multiple entries for the same book, we'll drop duplicates
-      top_books_details = top_books_details.drop_duplicates(subset=['ISBN'])
+      top_books = top_books.drop_duplicates(subset=['ISBN'])
       
-      top_books_details = top_books_details[['ISBN']]
-      return top_books_details
+      top_books = top_books[['ISBN']]
+      return top_books
 
 
     # Function to evaluate the performance of model for each user
@@ -231,14 +230,20 @@ def recommend_books_based_on_mood(mood, user_id):
 
     if interaction_count < 3:
       print(f"Less than 3 interactions for user {user_id}. Get Top 10 highly rated books")
-      top_k_books_isbn = model_recommender.get_top_k_popular_books(5)
-      print(top_k_books_isbn)
-      return top_k_books_isbn
+      top_k_books_isbn = model_recommender.get_top_k_popular_books(10)
+
+      list_top_k_books_isbn = list(top_k_books_isbn['ISBN'])
+      list_top_k_books_isbn = [number.zfill(10) for number in list_top_k_books_isbn]
+      print(list_top_k_books_isbn)
+      return list_top_k_books_isbn
   else:
     print(f"No interactions found for user {user_id}.")
-    top_k_books_isbn = model_recommender.get_top_k_popular_books(5)
-    print(top_k_books_isbn)
-    return top_k_books_isbn
+    top_k_books_isbn = model_recommender.get_top_k_popular_books(10)
+
+    list_top_k_books_isbn = list(top_k_books_isbn['ISBN'])
+    list_top_k_books_isbn = [number.zfill(10) for number in list_top_k_books_isbn]
+    print(list_top_k_books_isbn)
+    return list_top_k_books_isbn
 
   ret_updated_person_recs_df = model_recommender.recommend_book(cf_recommender_model,user_id,mood)
   list_ret_updated_person_recs_df = list(ret_updated_person_recs_df['ISBN'])
@@ -285,3 +290,39 @@ def fetch_book_details(book_isbns):
             print("url is ", url)
             book_details.append({'isbn': isbn, 'title': title, 'author': author, 'image_url' : image_url, 'url': url})
     return book_details
+
+
+
+import csv
+
+'''def store_ratings_in_model(ratings, user_id, filename='/Users/prathyushapolepalli/Documents/ISR/AuraRead/data/baseline_ratinsg.csv'):
+    # Define the fieldnames for the CSV file
+    fieldnames = ['User-ID', 'ISBN', 'Book-Rating']
+    
+    # Write ratings to CSV file
+    with open(filename, mode='a', newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        
+        # Write each rating entry
+        for isbn, rating in ratings.items():
+            writer.writerow({'User-ID': user_id, 'ISBN': isbn, 'Book-Rating': rating*2})'''
+
+
+def store_ratings_in_model(ratings, user_id, filename='/Users/prathyushapolepalli/Documents/ISR/AuraRead/data/baseline_ratinsg.csv'):
+    # Define the fieldnames for the CSV file
+    fieldnames = ['Unnamed: 0', 'Book', 'Author', 'Description', 'Genres', 'Year of Publication', 'Publisher_x', 'URL', 'Aggregated Emotions', 'Aggregated Des Emotions', 'ISBN', 'Book-Title', 'Book-Author', 'Year-Of-Publication', 'Publisher_y', 'Image-URL-S', 'Image-URL-M', 'Image-URL-L', 'User-ID', 'Book-Rating', 'Sorted Buckets', 'Sorted Buckets desc', 'Total Buckets', 'Max Mood']
+    
+    # Write ratings to CSV file
+    with open(filename, mode='a', newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        
+        # Write each rating entry
+        for isbn, rating in ratings.items():
+            row = {key: '' for key in fieldnames}  # Initialize row with empty values
+            row['User-ID'] = user_id
+            row['ISBN'] = isbn
+            row['Book-Rating'] = rating
+            writer.writerow(row)
+
+
+

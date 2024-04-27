@@ -66,29 +66,25 @@
             border-radius: 4px;
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
         }
-        .rating {
-            margin-top: 10px;
-            font-size: 14px;
-            color: #777;
-        }
 
         .rating input[type="radio"] {
-            display: none;
-        }
+    display: none;
+}
 
-        .rating label {
-            color: grey;
-            font-size: 20px;
-            padding: 0 5px;
-            cursor: pointer;
-        }
 
-        .rating label:hover,
-        .rating label:hover ~ label,
-        .rating input[type="radio"]:checked ~ label {
-            color: gold;
-        }
-        
+/* Style for all stars */
+.rating label {
+    color: grey; /* Initially set all stars to grey */
+    font-size: 20px;
+    padding: 0 5px;
+    cursor: pointer;
+}
+
+/* Highlight stars from the first to the currently selected star */
+.rating input[type="radio"]:checked ~ label {
+    color: gold; /* Set the color of the selected star and all stars before it to gold */
+}
+
         /* Additional styles for the submit button */
         .submit-button {
             padding: 10px 20px;
@@ -117,28 +113,30 @@
         <div class="message">
             <h4>Looks like you don't have enough history, please rate at least 5 of the following books</h4>
         </div>
-        <form action="submit-ratings-endpoint" method="post">
+        <form action="/submit-ratings-endpoint" method="post">
             <ul>
                 {% for book in book_details %}
-                    <li>
-                        <a href="{{ book.url }}" class="book-link" target="_blank" style="text-decoration: none; color: inherit;">
-                            <div class="book-info">
-                                <div class="book-title">{{ book.title | upper}}</div>
-                                <div class="book-author">by {{ book.author | upper}}</div>
-                            </div>
-                            <img src="{{ book.image_url }}" alt="Book Cover" class="book-cover">
-                        </a>
-                        <div class="rating">
-                            <!-- Adjust the name attribute to match your server-side handling -->
-                            {% for i in range(1,6) %}
-                                <input type="radio" id="star{{ i }}-{{ book.id }}" name="rating-{{ book.id }}" value="{{ i }}"><label for="star{{ i }}-{{ book.id }}">★</label>
-                            {% endfor %}
+                <li>
+                    <a href="{{ book.url }}" class="book-link" target="_blank" style="text-decoration: none; color: inherit;">
+                        <div class="book-info">
+                            <div class="book-title">{{ book.title | upper}}</div>
+                            <div class="book-author">by {{ book.author | upper}}</div>
                         </div>
-                    </li>
+                        <img src="{{ book.image_url }}" alt="Book Cover" class="book-cover">
+                    </a>
+                    <div class="rating" id="rating-{{ book.isbn }}">
+                        <!-- Adjust the name attribute to match your server-side handling -->
+                        {% for i in range(1,6) %}
+                        <input type="radio" id="star{{ i }}-{{ book.isbn }}" name="rating-{{ book.isbn }}" value="{{ i }}"><label for="star{{ i }}-{{ book.isbn }}">★</label>
+                        {% endfor %}
+                    </div>
+                </li>
                 {% endfor %}
             </ul>
+            <input type="hidden" name="user_id" value="{{ user_id }}">  <!-- Add user_id as a hidden input field -->
             <button type="submit" class="submit-button">Submit Ratings</button>
         </form>
+                
     </div>
 </body>
 </html>
