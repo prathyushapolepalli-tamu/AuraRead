@@ -308,6 +308,14 @@ import csv
             writer.writerow({'User-ID': user_id, 'ISBN': isbn, 'Book-Rating': rating*2})'''
 
 
+def get_max_mood_for_isbn(isbn, filename):
+    with open(filename, mode='r', newline='') as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            if row['ISBN'] == isbn:
+                return row['Max Mood']
+    return None  # Return None if no matching ISBN is found
+
 def store_ratings_in_model(ratings, user_id, filename='/Users/prathyushapolepalli/Documents/ISR/AuraRead/data/baseline_ratinsg.csv'):
     # Define the fieldnames for the CSV file
     fieldnames = ['Unnamed: 0', 'Book', 'Author', 'Description', 'Genres', 'Year of Publication', 'Publisher_x', 'URL', 'Aggregated Emotions', 'Aggregated Des Emotions', 'ISBN', 'Book-Title', 'Book-Author', 'Year-Of-Publication', 'Publisher_y', 'Image-URL-S', 'Image-URL-M', 'Image-URL-L', 'User-ID', 'Book-Rating', 'Sorted Buckets', 'Sorted Buckets desc', 'Total Buckets', 'Max Mood']
@@ -318,10 +326,13 @@ def store_ratings_in_model(ratings, user_id, filename='/Users/prathyushapolepall
         
         # Write each rating entry
         for isbn, rating in ratings.items():
+            cleaned_isbn = isbn.lstrip('0')
+            max_mood = get_max_mood_for_isbn(cleaned_isbn, filename)
             row = {key: '' for key in fieldnames}  # Initialize row with empty values
             row['User-ID'] = user_id
-            row['ISBN'] = isbn
+            row['ISBN'] = cleaned_isbn
             row['Book-Rating'] = rating*2
+            row['Max Mood'] = max_mood if max_mood else 'Unknown'
             writer.writerow(row)
 
 
