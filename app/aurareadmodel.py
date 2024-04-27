@@ -156,6 +156,19 @@ class ModelRecommender:
             hit = int(index in range(0, topn))
             return hit, index
 
+    # Fetch top 10 highly rated books
+    def get_top_k_popular_books(self, topk=5):
+      books_grouped = self.interactions_test_indexed_df.groupby('ISBN').size().reset_index(name='count')
+      
+      top_books = books_grouped.sort_values('count', ascending=False).head(topk)
+      
+      
+      # Since top_books_details might have multiple entries for the same book, we'll drop duplicates
+      top_books = top_books.drop_duplicates(subset=['ISBN'])
+      
+      top_books = top_books[['ISBN']]
+      return top_books
+
     # Function to evaluate the performance of model for each user
     def evaluate_model_for_user(self, model, person_id, mood):
 
@@ -172,10 +185,15 @@ class ModelRecommender:
         # Getting a ranked recommendation list from the model for a given user
         #person_recs_df = model.recommend_items(person_id, items_to_ignore=get_items_interacted(person_id, interactions_train_indexed_df),topn=10000000000)
         person_recs_df = model.recommend_items(person_id, items_to_ignore=[],topn=10000000000)
+        print(person_recs_df)
         updated_person_recs_df = person_recs_df.merge(self.ratings_df_unique[['ISBN', 'Max Mood', 'Book']], on='ISBN', how='left')
+        print(updated_person_recs_df.head(10))
+
+        print('Recommendation for User-ID = ',person_id)
+        if mood.lower() == "default":
+          return updated_person_recs_df.head(5)
+      
         updated_person_recs_df = updated_person_recs_df[updated_person_recs_df['Max Mood'].str.contains(mood, na=False)]
-        #print('Recommendation for User-ID = ',person_id)
-        #print(updated_person_recs_df.head(10))
         return updated_person_recs_df.head(5)
 
         # Function to evaluate the performance of model at overall level
@@ -223,8 +241,32 @@ def build_model():
   calculate_rmse(test_df, cf_recommender_model)
   return model_recommender, cf_recommender_model, test_df, train_df
 
-model_recommender, cf_recommender_model, test_df, train_df = build_model()
-
 def recommend_books_based_on_mood(mood, user_id):
-    ret_updated_person_recs_df = model_recommender.recommend_book(cf_recommender_model,user_id,mood)
-    return list(ret_updated_person_recs_df['ISBN'])
+  model_recommender, cf_recommender_model, test_df, train_df = build_model()
+  
+  if user_id in model_recommender.interactions_test_indexed_df.index:
+    interacted_values_testset = model_recommender.interactions_test_indexed_df.loc[user_id]
+    interaction_count = interacted_values_testset.shape[0] if model_recommender.interactions_test_indexed_df.loc[user_id].ndim > 1 else 1
+
+    if interaction_count < 3:
+      print(f"Less than 3 interactions for user {user_id}. Get Top 10 highly rated books")
+      top_k_books_isbn = model_recommender.get_top_k_popular_books(10)
+
+      list_top_k_books_isbn = list(top_k_books_isbn['ISBN'])
+      list_top_k_books_isbn = [number.zfill(10) for number in list_top_k_books_isbn]
+      print(list_top_k_books_isbn)
+      return list_top_k_books_isbn
+  else:
+    print(f"No interactions found for user {user_id}.")
+    top_k_books_isbn = model_recommender.get_top_k_popular_books(10)
+
+    list_top_k_books_isbn = list(top_k_books_isbn['ISBN'])
+    list_top_k_books_isbn = [number.zfill(10) for number in list_top_k_books_isbn]
+    print(list_top_k_books_isbn)
+    return list_top_k_books_isbn
+
+  ret_updated_person_recs_df = model_recommender.recommend_book(cf_recommender_model,user_id,mood)
+  list_ret_updated_person_recs_df = list(ret_updated_person_recs_df['ISBN'])
+  list_ret_updated_person_recs_df = [number.zfill(10) for number in list_ret_updated_person_recs_df]
+  print(list_ret_updated_person_recs_df)
+  return list_ret_updated_person_recs_df
