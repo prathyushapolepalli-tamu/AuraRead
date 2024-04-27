@@ -156,6 +156,22 @@ class ModelRecommender:
             hit = int(index in range(0, topn))
             return hit, index
 
+
+    # Fetch top 10 highly rated books
+    def get_top_k_popular_books(self, topk=5):
+      books_grouped = self.interactions_test_indexed_df.groupby('ISBN').size().reset_index(name='count')
+      
+      top_books = books_grouped.sort_values('count', ascending=False).head(topk)
+      
+      top_books_details = self.interactions_test_indexed_df[self.interactions_test_indexed_df['ISBN'].isin(top_books['ISBN'])]
+      
+      # Since top_books_details might have multiple entries for the same book, we'll drop duplicates
+      top_books_details = top_books_details.drop_duplicates(subset=['ISBN'])
+      
+      top_books_details = top_books_details[['ISBN']]
+      return top_books_details
+
+
     # Function to evaluate the performance of model for each user
     def evaluate_model_for_user(self, model, person_id, mood):
 
@@ -208,6 +224,22 @@ def build_model():
 
 def recommend_books_based_on_mood(mood, user_id):
   model_recommender, cf_recommender_model, test_df, train_df = build_model()
+  
+  if user_id in model_recommender.interactions_test_indexed_df.index:
+    interacted_values_testset = model_recommender.interactions_test_indexed_df.loc[user_id]
+    interaction_count = interacted_values_testset.shape[0] if model_recommender.interactions_test_indexed_df.loc[user_id].ndim > 1 else 1
+
+    if interaction_count < 3:
+      print(f"Less than 3 interactions for user {user_id}. Get Top 10 highly rated books")
+      top_k_books_isbn = model_recommender.get_top_k_popular_books(5)
+      print(top_k_books_isbn)
+      return top_k_books_isbn
+  else:
+    print(f"No interactions found for user {user_id}.")
+    top_k_books_isbn = model_recommender.get_top_k_popular_books(5)
+    print(top_k_books_isbn)
+    return top_k_books_isbn
+
   ret_updated_person_recs_df = model_recommender.recommend_book(cf_recommender_model,user_id,mood)
   list_ret_updated_person_recs_df = list(ret_updated_person_recs_df['ISBN'])
   list_ret_updated_person_recs_df = [number.zfill(10) for number in list_ret_updated_person_recs_df]
