@@ -57,7 +57,7 @@ def submit_ratings():
         store_ratings_in_model(book_ratings, user_id)
         
         # Redirect or render a success message
-        return "Ratings submitted successfully"
+        return render_template("index.html")
     else:
         return "Method not allowed", 405
 if __name__ == "__main__":

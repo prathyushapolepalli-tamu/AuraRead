@@ -321,7 +321,7 @@ def store_ratings_in_model(ratings, user_id, filename='/Users/prathyushapolepall
             row = {key: '' for key in fieldnames}  # Initialize row with empty values
             row['User-ID'] = user_id
             row['ISBN'] = isbn
-            row['Book-Rating'] = rating
+            row['Book-Rating'] = rating*2
             writer.writerow(row)
 
 
