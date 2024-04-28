@@ -223,6 +223,7 @@ def build_model():
   interactions_test_indexed_df = test_df.set_index('User-ID')
   cf_recommender_model = CFRecommender(cf_preds_df)
   model_recommender = ModelRecommender(interactions_full_indexed_df,interactions_test_indexed_df, interactions_train_indexed_df, ratings_df_unique)
+  
   return model_recommender, cf_recommender_model, test_df, train_df
 
 def recommend_books_based_on_mood(mood, user_id):
@@ -256,23 +257,6 @@ def recommend_books_based_on_mood(mood, user_id):
   return list_ret_updated_person_recs_df
 
 
-#print((recommend_books_based_on_mood('Fearful', 21576)))
-
-"""#Evaluation
-
-# Now, predict ratings for all user-item pairs in the test set
-test_users = test_df['User-ID']
-test_items = test_df['ISBN']
-predicted_ratings = [cf_recommender_model.predict_rating(user, item) for user, item in zip(test_users, test_items)]
-
-# Add these predictions back to the test dataframe
-test_df['predicted_rating'] = predicted_ratings
-
-# Calculate RMSE
-rmse = np.sqrt(mean_squared_error(test_df['Book-Rating'], test_df['predicted_rating'].fillna(0)))
-print(f"RMSE: {rmse}")"""
-
-# Assuming you have a DataFrame named book_data with columns ['ISBN', 'Title', 'Author']
 book_data = pd.read_csv('data/all_books.csv')  # Load your book data from a CSV file or database
 
 def fetch_book_details(book_isbns):
@@ -295,22 +279,7 @@ def fetch_book_details(book_isbns):
             book_details.append({'isbn': isbn, 'title': title, 'author': author, 'image_url' : image_url, 'url': url})
     return book_details
 
-
-
 import csv
-
-'''def store_ratings_in_model(ratings, user_id, filename='/Users/prathyushapolepalli/Documents/ISR/AuraRead/data/baseline_ratinsg.csv'):
-    # Define the fieldnames for the CSV file
-    fieldnames = ['User-ID', 'ISBN', 'Book-Rating']
-    
-    # Write ratings to CSV file
-    with open(filename, mode='a', newline='') as file:
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
-        
-        # Write each rating entry
-        for isbn, rating in ratings.items():
-            writer.writerow({'User-ID': user_id, 'ISBN': isbn, 'Book-Rating': rating*2})'''
-
 
 def get_max_mood_for_isbn(isbn, filename):
     with open(filename, mode='r', newline='') as file:
@@ -338,6 +307,3 @@ def store_ratings_in_model(ratings, user_id, filename='/Users/prathyushapolepall
             row['Book-Rating'] = rating*2
             row['Max Mood'] = max_mood if max_mood else 'Unknown'
             writer.writerow(row)
-
-
-
