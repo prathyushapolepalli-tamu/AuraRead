@@ -305,7 +305,7 @@ def get_max_mood_for_isbn(isbn, filename):
                 return row['Max Mood']
     return None  # Return None if no matching ISBN is found
 
-def store_ratings_in_model(ratings, user_id, filename='/Users/prathyushapolepalli/Documents/ISR/AuraRead/data/baseline_ratinsg.csv'):
+def store_ratings_in_model(ratings, user_id, filename='data/baseline_ratinsg.csv'):
     # Define the fieldnames for the CSV file
     fieldnames = ['Unnamed: 0', 'Book', 'Author', 'Description', 'Genres', 'Year of Publication', 'Publisher_x', 'URL', 'Aggregated Emotions', 'Aggregated Des Emotions', 'ISBN', 'Book-Title', 'Book-Author', 'Year-Of-Publication', 'Publisher_y', 'Image-URL-S', 'Image-URL-M', 'Image-URL-L', 'User-ID', 'Book-Rating', 'Sorted Buckets', 'Sorted Buckets desc', 'Total Buckets', 'Max Mood']
     
