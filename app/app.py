@@ -3,9 +3,9 @@ import torch
 import pandas as pd
 
 # Import your recommendation model and necessary preprocessing functions
-from model import recommend_books_based_on_mood
-from model import fetch_book_details
-from model import store_ratings_in_model
+from aurareadmodel import recommend_books_based_on_mood
+from aurareadmodel import fetch_book_details
+from aurareadmodel import store_ratings_in_model
 
 app = Flask(__name__)
 
@@ -51,7 +51,7 @@ def submit_ratings():
                 book_id = key.replace("rating-", "")
                 book_ratings[book_id] = 6 - int(value)
         
-        # Call a function in model.py to store the ratings
+        # Call a function in aurareadmodel.py to store the ratings
         print("Book ratings are:")
         print(book_ratings.items())
         store_ratings_in_model(book_ratings, user_id)
