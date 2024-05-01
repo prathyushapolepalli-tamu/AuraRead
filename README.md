@@ -16,7 +16,9 @@ Project for CSCE 670
 ## Final Deliverable Links
 1. Youtube link : https://www.youtube.com/watch?v=OtPKxmxOq8o
 2. GitHub Code link : https://github.com/prathyushapolepalli-tamu/AuraRead
-3. Presentation Slide Deck : https://github.com/prathyushapolepalli-tamu/AuraRead/blob/main/Final_Project_Presentation_Slides.pptx ([Click Here](https://github.com/prathyushapolepalli-tamu/AuraRead/blob/main/Final_Project_Presentation_Slides.pptx) for PDF version)
+3. Presentation Slide Deck : https://github.com/prathyushapolepalli-tamu/AuraRead/blob/main/Final_Project_Presentation_Slides.pptx ([Click Here](https://github.com/prathyushapolepalli-tamu/AuraRead/blob/main/Final_Project_Presentation_Slides.pdf) for PDF version)
+
+
 
 References:
 - Kaggle Datasets : 
